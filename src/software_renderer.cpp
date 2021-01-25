@@ -56,7 +56,7 @@ void SoftwareRendererImp::draw_svg(SVG &svg)
 
   // set top level transformation
   transformation = canvas_to_screen;
-
+  transformations.push(transformation);
   // draw all elements
   for ( size_t i = 0; i < svg.elements.size(); ++i ) {
     draw_element(svg.elements[i]);
@@ -67,6 +67,8 @@ void SoftwareRendererImp::draw_svg(SVG &svg)
   Vector2D b = transform(Vector2D(svg.width,     0    )); b.x++; b.y--;
   Vector2D c = transform(Vector2D(    0    ,svg.height)); c.x--; c.y++;
   Vector2D d = transform(Vector2D(svg.width,svg.height)); d.x++; d.y++;
+
+  transformations.pop();
 
   rasterize_line(a.x, a.y, b.x, b.y, Color::Black);
   rasterize_line(a.x, a.y, c.x, c.y, Color::Black);
@@ -107,6 +109,8 @@ void SoftwareRendererImp::draw_element(SVGElement *element)
 
   // Task 3 (part 1):
   // Modify this to implement the transformation stack
+  transformation = transformations.top() * element->transform;
+  transformations.push(transformation);
 
   switch (element->type)
   {
@@ -137,6 +141,8 @@ void SoftwareRendererImp::draw_element(SVGElement *element)
 	default:
 		break;
   }
+  transformations.pop();
+  transformation = transformations.top();
 }
 
 // Primitive Drawing //

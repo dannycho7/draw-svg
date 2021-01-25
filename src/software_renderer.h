@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <vector>
 #include <queue>
+#include <stack>
 #include <unordered_map>
 
 #ifdef USE_PTHREAD
@@ -165,6 +166,7 @@ namespace CS248
 		Color alpha_blending(Color pixel_color, Color color);
 
 		SoftwareRendererRef *ref;
+		std::stack<Matrix3x3> transformations;
 	}; // class SoftwareRendererImp
 
 	class SoftwareRendererRef : public SoftwareRenderer
