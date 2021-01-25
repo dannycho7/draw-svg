@@ -266,33 +266,64 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
   render_target[4 * (sx + sy * target_w) + 1] = (uint8_t)(color.g * 255);
   render_target[4 * (sx + sy * target_w) + 2] = (uint8_t)(color.b * 255);
   render_target[4 * (sx + sy * target_w) + 3] = (uint8_t)(color.a * 255);
-
 }
 
-void SoftwareRendererImp::rasterize_line( float x0, float y0,
-                                          float x1, float y1,
-                                          Color color) {
+void SoftwareRendererImp::rasterize_line(float x0, float y0,
+                                         float x1, float y1,
+                                         Color color)
+{
 
   // Extra credit (delete the line below and implement your own)
   ref->rasterize_line_helper(x0, y0, x1, y1, target_w, target_h, color, this);
-
 }
 
-void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
-                                              float x1, float y1,
-                                              float x2, float y2,
-                                              Color color ) {
-  // Task 1: 
+void SoftwareRendererImp::rasterize_triangle(float x0, float y0,
+                                             float x1, float y1,
+                                             float x2, float y2,
+                                             Color color)
+{
+  // Task 1:
   // Implement triangle rasterization (you may want to call fill_sample here)
+  std::vector<std::pair<float, float>> P{{x0, y0}, {x1, y1}, {x2, y2}};
+  auto L = [&P](int i, float x, float y) -> float {
+    auto p_i = P.at(i);
+    auto p_i1 = P.at((i + 1) % P.size());
+    double A = p_i1.second - p_i.second;
+    double B = p_i1.first - p_i.first;
+    double C = p_i.second * B - p_i.first * A;
+    return A * x - B * y + C;
+  };
 
+  if (L(0, x2, y2) > 0)
+  {
+    // TODO: Did this line not matter?
+    P = {{x0, y0}, {x2, y2}, {x1, y1}};
+  }
+
+  float min_x = floor(min(x0, min(x1, x2))) - 0.5;
+  float max_x = ceil(max(x0, max(x1, x2))) + 0.5;
+  float min_y = floor(min(y0, min(y1, y2))) - 0.5;
+  float max_y = ceil(max(y0, max(y1, y2))) + 0.5;
+
+  for (float sx = min_x; sx < max_x; ++sx)
+  {
+    for (float sy = min_y; sy < max_y; ++sy)
+    {
+      bool inside = L(0, sx, sy) <= 0 && L(1, sx, sy) <= 0 && L(2, sx, sy) <= 0;
+      if (inside)
+      {
+        fill_pixel(sx, sy, color);
+      }
+    }
+  }
 }
 
-void SoftwareRendererImp::rasterize_image( float x0, float y0,
-                                           float x1, float y1,
-                                           Texture& tex ) {
+void SoftwareRendererImp::rasterize_image(float x0, float y0,
+                                          float x1, float y1,
+                                          Texture &tex)
+{
   // Task 4: 
   // Implement image rasterization (you may want to call fill_sample here)
-
 }
 
 // resolve samples to render target
