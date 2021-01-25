@@ -16,35 +16,43 @@ namespace CS248 {
 
 // fill a sample location with color
 void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
+  // check bounds
+  if (sx < 0 || sx >= supersample_w)
+    return;
+  if (sy < 0 || sy >= supersample_h)
+    return;
 
+  float inv255 = 1.0 / 255.0;
+  Color pixel_color;
+
+	pixel_color.r = supersample_target[4 * (sx + sy * supersample_w)] * inv255;
+	pixel_color.g = supersample_target[4 * (sx + sy * supersample_w) + 1] * inv255;
+	pixel_color.b = supersample_target[4 * (sx + sy * supersample_w) + 2] * inv255;
+	pixel_color.a = supersample_target[4 * (sx + sy * supersample_w) + 3] * inv255;
+  pixel_color = ref->alpha_blending_helper(pixel_color, color);
+  supersample_target[4 * (sx + sy * supersample_w)] = (uint8_t)(pixel_color.r * 255);
+  supersample_target[4 * (sx + sy * supersample_w) + 1] = (uint8_t)(pixel_color.g * 255);
+  supersample_target[4 * (sx + sy * supersample_w) + 2] = (uint8_t)(pixel_color.b * 255);
+  supersample_target[4 * (sx + sy * supersample_w) + 3] = (uint8_t)(pixel_color.a * 255);
 }
 
 // fill samples in the entire pixel specified by pixel coordinates
-void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color) {
-
-	// Task 2: Re-implement this function
-
-	// check bounds
-	if (x < 0 || x >= target_w) return;
-	if (y < 0 || y >= target_h) return;
-
-	Color pixel_color;
-	float inv255 = 1.0 / 255.0;
-	pixel_color.r = render_target[4 * (x + y * target_w)] * inv255;
-	pixel_color.g = render_target[4 * (x + y * target_w) + 1] * inv255;
-	pixel_color.b = render_target[4 * (x + y * target_w) + 2] * inv255;
-	pixel_color.a = render_target[4 * (x + y * target_w) + 3] * inv255;
-
-	pixel_color = ref->alpha_blending_helper(pixel_color, color);
-
-	render_target[4 * (x + y * target_w)] = (uint8_t)(pixel_color.r * 255);
-	render_target[4 * (x + y * target_w) + 1] = (uint8_t)(pixel_color.g * 255);
-	render_target[4 * (x + y * target_w) + 2] = (uint8_t)(pixel_color.b * 255);
-	render_target[4 * (x + y * target_w) + 3] = (uint8_t)(pixel_color.a * 255);
-
+void SoftwareRendererImp::fill_pixel(int x, int y, const Color &color)
+{
+  // Task 2: Re-implement this function
+  for (int i = 0; i < sample_rate; ++i)
+  {
+    for (int j = 0; j < sample_rate; ++j)
+    {
+      int sx = x * sample_rate + i;
+      int sy = y * sample_rate + j;
+      fill_sample(sx, sy, color);
+    }
+  }
 }
 
-void SoftwareRendererImp::draw_svg( SVG& svg ) {
+void SoftwareRendererImp::draw_svg(SVG &svg)
+{
 
   // set top level transformation
   transformation = canvas_to_screen;
@@ -67,35 +75,42 @@ void SoftwareRendererImp::draw_svg( SVG& svg ) {
 
   // resolve and send to render target
   resolve();
-
 }
 
-void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
+void SoftwareRendererImp::set_sample_rate(size_t sample_rate)
+{
 
-  // Task 2: 
+  // Task 2:
   // You may want to modify this for supersampling support
   this->sample_rate = sample_rate;
-
+  this->supersample_w = target_w * sample_rate;
+  this->supersample_h = target_h * sample_rate;
+  this->supersample_target.assign(4 * supersample_w * supersample_h, 255);
 }
 
-void SoftwareRendererImp::set_render_target( unsigned char* render_target,
-                                             size_t width, size_t height ) {
+void SoftwareRendererImp::set_render_target(unsigned char *render_target,
+                                            size_t width, size_t height)
+{
 
-  // Task 2: 
+  // Task 2:
   // You may want to modify this for supersampling support
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;
-
+  this->supersample_w = target_w * sample_rate;
+  this->supersample_h = target_h * sample_rate;
+  this->supersample_target.assign(4 * supersample_w * supersample_h, 255);
 }
 
-void SoftwareRendererImp::draw_element( SVGElement* element ) {
+void SoftwareRendererImp::draw_element(SVGElement *element)
+{
 
-	// Task 3 (part 1):
-	// Modify this to implement the transformation stack
+  // Task 3 (part 1):
+  // Modify this to implement the transformation stack
 
-	switch (element->type) {
-	case POINT:
+  switch (element->type)
+  {
+  case POINT:
 		draw_point(static_cast<Point&>(*element));
 		break;
 	case LINE:
@@ -121,10 +136,8 @@ void SoftwareRendererImp::draw_element( SVGElement* element ) {
 		break;
 	default:
 		break;
-	}
-
+  }
 }
-
 
 // Primitive Drawing //
 
@@ -261,11 +274,7 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
   if (sy < 0 || sy >= target_h) return;
 
   // fill sample - NOT doing alpha blending!
-  // TODO: Call fill_pixel here to run alpha blending
-  render_target[4 * (sx + sy * target_w)] = (uint8_t)(color.r * 255);
-  render_target[4 * (sx + sy * target_w) + 1] = (uint8_t)(color.g * 255);
-  render_target[4 * (sx + sy * target_w) + 2] = (uint8_t)(color.b * 255);
-  render_target[4 * (sx + sy * target_w) + 3] = (uint8_t)(color.a * 255);
+  fill_pixel(sx, sy, color);
 }
 
 void SoftwareRendererImp::rasterize_line(float x0, float y0,
@@ -299,20 +308,27 @@ void SoftwareRendererImp::rasterize_triangle(float x0, float y0,
     // TODO: Did this line not matter?
     P = {{x0, y0}, {x2, y2}, {x1, y1}};
   }
-
-  float min_x = floor(min(x0, min(x1, x2))) - 0.5;
-  float max_x = ceil(max(x0, max(x1, x2))) + 0.5;
-  float min_y = floor(min(y0, min(y1, y2))) - 0.5;
-  float max_y = ceil(max(y0, max(y1, y2))) + 0.5;
-
-  for (float sx = min_x; sx < max_x; ++sx)
+  float sample_inc = 1 / static_cast<float>(this->sample_rate);  
+  int min_x = floor(min(x0, min(x1, x2)));
+  int max_x = ceil(max(x0, max(x1, x2)));
+  int min_y = floor(min(y0, min(y1, y2)));
+  int max_y = ceil(max(y0, max(y1, y2)));
+  for (int x = min_x; x < max_x; ++x)
   {
-    for (float sy = min_y; sy < max_y; ++sy)
+    for (int y = min_y; y < max_y; ++y)
     {
-      bool inside = L(0, sx, sy) <= 0 && L(1, sx, sy) <= 0 && L(2, sx, sy) <= 0;
-      if (inside)
+      for (int i = 0; i < sample_rate; ++i)
       {
-        fill_pixel(sx, sy, color);
+        for (int j = 0; j < sample_rate; ++j)
+        {
+          float sx = x + sample_inc * (i + 0.5);
+          float sy = y + sample_inc * (j + 0.5);
+          bool inside = L(0, sx, sy) <= 0 && L(1, sx, sy) <= 0 && L(2, sx, sy) <= 0;
+          if (inside)
+          {
+            fill_sample(x * sample_rate + i, y * sample_rate + j, color);
+          }
+        }
       }
     }
   }
@@ -327,13 +343,34 @@ void SoftwareRendererImp::rasterize_image(float x0, float y0,
 }
 
 // resolve samples to render target
-void SoftwareRendererImp::resolve( void ) {
-
-  // Task 2: 
+void SoftwareRendererImp::resolve(void)
+{
+  // Task 2:d
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 2".
-  return;
-
+  for (int x = 0; x < target_w; ++x)
+  {
+    for (int y = 0; y < target_h; ++y)
+    {
+      int r = 0, g = 0, b = 0, a = 0;
+      for (int i = 0; i < sample_rate; ++i)
+      {
+        for (int j = 0; j < sample_rate; ++j)
+        {
+          int sx = x * sample_rate + i;
+          int sy = y * sample_rate + j;
+          r += supersample_target[4 * (sx + sy * supersample_w)];
+          g += supersample_target[4 * (sx + sy * supersample_w) + 1];
+          b += supersample_target[4 * (sx + sy * supersample_w) + 2];
+          a += supersample_target[4 * (sx + sy * supersample_w) + 3];
+        }
+      }
+      render_target[4 * (x + y * target_w)] = r / pow(sample_rate, 2);
+      render_target[4 * (x + y * target_w) + 1] = g / pow(sample_rate, 2);
+      render_target[4 * (x + y * target_w) + 2] = b / pow(sample_rate, 2);
+      render_target[4 * (x + y * target_w) + 3] = a / pow(sample_rate, 2);
+    }
+  }
 }
 
 Color SoftwareRendererImp::alpha_blending(Color pixel_color, Color color)
@@ -342,6 +379,5 @@ Color SoftwareRendererImp::alpha_blending(Color pixel_color, Color color)
   // Implement alpha compositing
   return pixel_color;
 }
-
 
 } // namespace CS248
