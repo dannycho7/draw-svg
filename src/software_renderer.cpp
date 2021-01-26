@@ -24,12 +24,11 @@ void SoftwareRendererImp::fill_sample(int sx, int sy, const Color &color) {
 
   float inv255 = 1.0 / 255.0;
   Color pixel_color;
-
 	pixel_color.r = supersample_target[4 * (sx + sy * supersample_w)] * inv255;
 	pixel_color.g = supersample_target[4 * (sx + sy * supersample_w) + 1] * inv255;
 	pixel_color.b = supersample_target[4 * (sx + sy * supersample_w) + 2] * inv255;
 	pixel_color.a = supersample_target[4 * (sx + sy * supersample_w) + 3] * inv255;
-  pixel_color = ref->alpha_blending_helper(pixel_color, color);
+  pixel_color = alpha_blending(pixel_color, color);
   supersample_target[4 * (sx + sy * supersample_w)] = (uint8_t)(pixel_color.r * 255);
   supersample_target[4 * (sx + sy * supersample_w) + 1] = (uint8_t)(pixel_color.g * 255);
   supersample_target[4 * (sx + sy * supersample_w) + 2] = (uint8_t)(pixel_color.b * 255);
@@ -402,6 +401,10 @@ Color SoftwareRendererImp::alpha_blending(Color pixel_color, Color color)
 {
   // Task 5
   // Implement alpha compositing
+  pixel_color.r = (1 - color.a) * pixel_color.a * pixel_color.r + color.a * color.r;
+  pixel_color.g = (1 - color.a) * pixel_color.a * pixel_color.g + color.a * color.g;
+  pixel_color.b = (1 - color.a) * pixel_color.a * pixel_color.b + color.a * color.b;
+  pixel_color.a = 1 - (1 - pixel_color.a) * (1 - color.a);
   return pixel_color;
 }
 
