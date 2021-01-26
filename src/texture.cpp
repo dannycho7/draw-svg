@@ -78,26 +78,39 @@ void Sampler2DImp::generate_mips(Texture& tex, int startLevel) {
 
 }
 
-Color Sampler2DImp::sample_nearest(Texture& tex, 
-                                   float u, float v, 
-                                   int level) {
+Color Sampler2DImp::sample_nearest(Texture &tex,
+                                   float u, float v,
+                                   int level)
+{
 
   // Task 4: Implement nearest neighbour interpolation
-  
+  if (level == 0)
+  {
+    const auto& mip = tex.mipmap.at(level);
+    float tx = u * mip.width;
+    float ty = v * mip.height;
+    int x = floor(tx);
+    int y = floor(ty);
+    Color nearest;
+    nearest.r = mip.texels.at(4 * (x + y * mip.width)) / 255.0;
+    nearest.g = mip.texels.at(4 * (x + y * mip.width) + 1) / 255.0;
+    nearest.b = mip.texels.at(4 * (x + y * mip.width) + 2) / 255.0;
+    nearest.a = mip.texels.at(4 * (x + y * mip.width) + 3) / 255.0;
+    return nearest;
+  }
   // return magenta for invalid level
-  return Color(1,0,1,1);
-
+  return Color(1, 0, 1, 1);
 }
 
-Color Sampler2DImp::sample_bilinear(Texture& tex, 
-                                    float u, float v, 
-                                    int level) {
-  
+Color Sampler2DImp::sample_bilinear(Texture &tex,
+                                    float u, float v,
+                                    int level)
+{
+
   // Task 4: Implement bilinear filtering
 
   // return magenta for invalid level
   return Color(1,0,1,1);
-
 }
 
 Color Sampler2DImp::sample_trilinear(Texture& tex, 
