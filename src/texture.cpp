@@ -108,20 +108,50 @@ Color Sampler2DImp::sample_bilinear(Texture &tex,
 {
 
   // Task 4: Implement bilinear filtering
+  if (level >= tex.mipmap.size())
+  {
+    // return magenta for invalid level
+    return Color(1, 0, 1, 1);
+  }
+  auto lerp = [](float x, Color v0, Color v1) -> Color {
+    return v0 + x * (v1 + (-1 * v0));
+  };
+  const auto &mip = tex.mipmap.at(level);
+  float tx = u * mip.width;
+  float ty = v * mip.height;
 
-  // return magenta for invalid level
-  return Color(1,0,1,1);
+  auto get_color = [&mip](int x, int y) -> Color {
+    Color c;
+    c.r = mip.texels.at(4 * (x + y * mip.width)) / 255.f;
+    c.g = mip.texels.at(4 * (x + y * mip.width) + 1) / 255.f;
+    c.b = mip.texels.at(4 * (x + y * mip.width) + 2) / 255.f;
+    c.a = mip.texels.at(4 * (x + y * mip.width) + 3) / 255.f;
+    return c;
+  };
+
+  int lx = min(max(static_cast<int>(floor(tx - 0.5)), 0), static_cast<int>(mip.width - 2));
+  int ly = min(max(static_cast<int>(floor(ty - 0.5)), 0), static_cast<int>(mip.height - 2));
+
+  Color u01 = get_color(lx, ly);
+  Color u11 = get_color(lx + 1, ly);
+  Color u00 = get_color(lx, ly + 1);
+  Color u10 = get_color(lx + 1, ly + 1);
+  float s = tx - lx + 0.5;
+  float t = ly + 1.5 - ty;
+  Color u0 = lerp(s, u00, u10);
+  Color u1 = lerp(s, u01, u11);
+  return lerp(t, u0, u1);
 }
 
-Color Sampler2DImp::sample_trilinear(Texture& tex, 
-                                     float u, float v, 
-                                     float u_scale, float v_scale) {
+Color Sampler2DImp::sample_trilinear(Texture &tex,
+                                     float u, float v,
+                                     float u_scale, float v_scale)
+{
 
   // Extra credit: Implement trilinear filtering
 
   // return magenta for invalid level
   return Color(1,0,1,1);
-
 }
 
 } // namespace CS248
