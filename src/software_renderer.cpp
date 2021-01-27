@@ -346,22 +346,31 @@ void SoftwareRendererImp::rasterize_image(float x0, float y0,
   // Task 4: 
   // Implement image rasterization (you may want to call fill_sample here)
   int min_x = floor(x0);
+  int max_x = ceil(x1);
   int min_y = floor(y0);
-  int n_sx = (ceil(x1) - min_x) * sample_rate;
-  int n_sy = (ceil(y1) - min_y) * sample_rate;
-
+  int max_y = ceil(y1);
   float sample_inc = 1 / static_cast<float>(this->sample_rate);
-  for (int i = 0; i < n_sx; ++i)
+  for (int x = min_x; x < max_x; ++x)
   {
-    for (int j = 0; j < n_sy; ++j)
+    for (int y = min_y; y < max_y; ++y)
     {
-      float sx = min_x + sample_inc * (i + 0.5);
-      float sy = min_y + sample_inc * (j + 0.5);
-      float u = (sx - x0) / (x1 - x0);
-      float v = (sy - y0) / (y1 - y0);
-      // Color c = sampler->sample_nearest(tex, u, v);
-      Color c = sampler->sample_bilinear(tex, u, v);
-      fill_sample(sx, sy, c);
+      for (int i = 0; i < sample_rate; ++i)
+      {
+        for (int j = 0; j < sample_rate; ++j)
+        {
+          float sx = x + sample_inc * (i + 0.5);
+          float sy = y + sample_inc * (j + 0.5);
+          if (sx < x0 || sx > x1 || sy < y0 || sy > y1)
+          {
+            continue;
+          }
+          float u = (sx - x0) / (x1 - x0);
+          float v = (sy - y0) / (y1 - y0);
+          // Color c = sampler->sample_nearest(tex, u, v);
+          Color c = sampler->sample_bilinear(tex, u, v);
+          fill_sample(x * sample_rate + i, y * sample_rate + j, c);
+        }
+      }
     }
   }
 }

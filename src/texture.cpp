@@ -129,14 +129,18 @@ Color Sampler2DImp::sample_bilinear(Texture &tex,
     return c;
   };
 
-  int lx = min(max(static_cast<int>(floor(tx - 0.5)), 0), static_cast<int>(mip.width - 2));
-  int ly = min(max(static_cast<int>(floor(ty - 0.5)), 0), static_cast<int>(mip.height - 2));
+  int lx = floor(tx - 0.5);
+  int ly = floor(ty - 0.5);
+  // clamp edges
+  if (lx < 0 || lx == mip.width - 1 || ly < 0 || ly == mip.height - 1) {
+    return get_color(max(lx, 0), max(ly, 0));
+  }
 
   Color u01 = get_color(lx, ly);
   Color u11 = get_color(lx + 1, ly);
   Color u00 = get_color(lx, ly + 1);
   Color u10 = get_color(lx + 1, ly + 1);
-  float s = tx - lx + 0.5;
+  float s = tx - (lx + 0.5);
   float t = ly + 1.5 - ty;
   Color u0 = lerp(s, u00, u10);
   Color u1 = lerp(s, u01, u11);
